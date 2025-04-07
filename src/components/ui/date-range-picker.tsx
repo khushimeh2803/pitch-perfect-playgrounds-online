@@ -12,8 +12,8 @@ import { format } from "date-fns";
 import { DateRange } from "react-day-picker";
 
 export function DateRangePicker() {
-  // Change to use DateRange type and make 'to' optional to match the library's type
-  const [date, setDate] = React.useState<DateRange>({
+  // Use DateRange type from react-day-picker which has an optional 'to' property
+  const [date, setDate] = React.useState<DateRange | undefined>({
     from: new Date(),
     to: new Date(new Date().setDate(new Date().getDate() + 7)),
   });
