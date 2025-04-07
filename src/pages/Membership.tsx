@@ -206,7 +206,7 @@ const Membership = () => {
               },
               {
                 question: 'Can I upgrade my plan later?',
-                answer: 'Yes, you can upgrade your membership plan at any time. Your new benefits will be available immediately, and we'll prorate the difference in price.'
+                answer: 'Yes, you can upgrade your membership plan at any time. Your new benefits will be available immediately, and we\'ll prorate the difference in price.'
               },
               {
                 question: 'Is there a free trial available?',
@@ -214,7 +214,7 @@ const Membership = () => {
               },
               {
                 question: 'How do I cancel my membership?',
-                answer: 'You can cancel your membership at any time from your account settings. If you cancel, you'll continue to have access to your benefits until the end of your current billing period.'
+                answer: 'You can cancel your membership at any time from your account settings. If you cancel, you\'ll continue to have access to your benefits until the end of your current billing period.'
               },
               {
                 question: 'Are there any hidden fees?',
