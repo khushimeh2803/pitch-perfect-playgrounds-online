@@ -9,12 +9,11 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
+import { DateRange } from "react-day-picker";
 
 export function DateRangePicker() {
-  const [date, setDate] = React.useState<{
-    from: Date | undefined;
-    to: Date | undefined;
-  }>({
+  // Change to use DateRange type and make 'to' optional to match the library's type
+  const [date, setDate] = React.useState<DateRange>({
     from: new Date(),
     to: new Date(new Date().setDate(new Date().getDate() + 7)),
   });
@@ -41,7 +40,7 @@ export function DateRangePicker() {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="center">
+      <PopoverContent className="w-auto p-0 pointer-events-auto" align="center">
         <Calendar
           initialFocus
           mode="range"
@@ -49,6 +48,7 @@ export function DateRangePicker() {
           selected={date}
           onSelect={setDate}
           numberOfMonths={2}
+          className="pointer-events-auto"
         />
       </PopoverContent>
     </Popover>
