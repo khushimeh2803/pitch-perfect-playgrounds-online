@@ -223,7 +223,7 @@ const Membership = () => {
               {
                 question: 'Can I share my membership with friends?',
                 answer: 'Memberships are for individual use only and cannot be shared. However, we offer group discounts for teams or organizations - contact us for details.'
-              },
+              }
             ].map((item, index) => (
               <div key={index} className="bg-white rounded-lg shadow-md p-6">
                 <h3 className="text-lg font-medium text-pitch-blue mb-2">{item.question}</h3>
@@ -243,20 +243,20 @@ const Membership = () => {
                 name: 'Rahul Sharma',
                 role: 'Gold Member',
                 image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
-                quote: 'The Gold membership has paid for itself multiple times over with the discounts I get. Plus, the priority booking means I always get my preferred slots!',
+                quote: 'The Gold membership has paid for itself multiple times over with the discounts I get. Plus, the priority booking means I always get my preferred slots!'
               },
               {
                 name: 'Priya Patel',
                 role: 'Platinum Member',
                 image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
-                quote: 'As a professional athlete, I need reliable access to quality grounds. The Platinum membership gives me all that and more. Worth every rupee.',
+                quote: 'As a professional athlete, I need reliable access to quality grounds. The Platinum membership gives me all that and more. Worth every rupee.'
               },
               {
                 name: 'Vikram Singh',
                 role: 'Basic Member',
                 image: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
-                quote: 'Started with the Basic plan as a casual player. It\'s perfect for my needs and the discounts make it practically pay for itself.',
-              },
+                quote: 'Started with the Basic plan as a casual player. It\'s perfect for my needs and the discounts make it practically pay for itself.'
+              }
             ].map((testimonial, index) => (
               <div key={index} className="bg-white rounded-lg shadow-md p-6">
                 <div className="flex items-center mb-4">
