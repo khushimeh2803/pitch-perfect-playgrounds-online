@@ -45,8 +45,8 @@ const Membership = () => {
         { name: 'Slot cancellation up to 12 hours', included: true },
         { name: 'Early access to new grounds', included: false },
         { name: 'Priority booking on weekends', included: false },
-        { name: 'Exclusive member events', included: false },
-      ],
+        { name: 'Exclusive member events', included: false }
+      ]
     },
     {
       id: 'gold',
@@ -65,8 +65,8 @@ const Membership = () => {
         { name: 'Slot cancellation up to 4 hours', included: true },
         { name: 'Early access to new grounds', included: true },
         { name: 'Priority booking on weekends', included: true },
-        { name: 'Exclusive member events', included: false },
-      ],
+        { name: 'Exclusive member events', included: false }
+      ]
     },
     {
       id: 'platinum',
@@ -84,9 +84,9 @@ const Membership = () => {
         { name: 'Flexible cancellation policy', included: true },
         { name: 'Early access to new grounds', included: true },
         { name: 'Priority booking on weekends', included: true },
-        { name: 'Exclusive member events', included: true },
-      ],
-    },
+        { name: 'Exclusive member events', included: true }
+      ]
+    }
   ];
   
   const selectPlan = (plan: Plan) => {
