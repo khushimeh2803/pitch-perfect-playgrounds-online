@@ -14,7 +14,6 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Download, TrendingUp, Users, Calendar, CreditCard, MapPin, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 
-// Mock data for reports
 const revenueData = [
   { month: 'Jan', revenue: 82400 },
   { month: 'Feb', revenue: 95600 },
