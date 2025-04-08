@@ -20,7 +20,7 @@ const Sports = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredSports, setFilteredSports] = useState<Sport[]>([]);
   
-  // Mock data for sports
+  // Mock data for sports (removed Tennis and Table Tennis)
   const sports: Sport[] = [
     {
       id: '1',
@@ -59,15 +59,6 @@ const Sports = () => {
       image: 'https://images.unsplash.com/photo-1570373289042-d3eccd7425de?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
     },
     {
-      id: '5',
-      name: 'Tennis',
-      icon: '🎾',
-      description: 'Play tennis on well-maintained courts with proper facilities and amenities.',
-      groundCount: 12,
-      popularTimes: ['Mornings', 'Weekends'],
-      image: 'https://images.unsplash.com/photo-1576610616656-d3aa5d1f4534?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-    },
-    {
       id: '6',
       name: 'Volleyball',
       icon: '🏐',
@@ -84,15 +75,6 @@ const Sports = () => {
       groundCount: 6,
       popularTimes: ['Evenings', 'Weekends'],
       image: 'https://images.unsplash.com/photo-1580748141549-71748dbe0bdc?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-    },
-    {
-      id: '8',
-      name: 'Table Tennis',
-      icon: '🏓',
-      description: 'Book indoor table tennis facilities for casual play or tournaments.',
-      groundCount: 10,
-      popularTimes: ['Anytime', 'Weekends'],
-      image: 'https://images.unsplash.com/photo-1609710228159-0fa9bd7c0827?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
     },
   ];
   
@@ -132,7 +114,7 @@ const Sports = () => {
         </div>
         
         {/* Sports Grid */}
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
           {filteredSports.map((sport) => (
             <Card key={sport.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 animate-fade-in">
               <div className="h-48 overflow-hidden">

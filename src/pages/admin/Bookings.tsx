@@ -31,10 +31,26 @@ import {
   X, 
   Clock,
   MapPin,
-  User
+  User,
+  Phone,
+  Mail,
+  AlertCircle,
+  FileText
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { Link } from 'react-router-dom';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Separator } from '@/components/ui/separator';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
 
 interface Booking {
   id: string;
@@ -45,18 +61,36 @@ interface Booking {
   time: string;
   userName: string;
   userEmail: string;
+  userPhone?: string;
   userImage?: string;
+  userAddress?: string;
   status: 'confirmed' | 'pending' | 'cancelled' | 'completed';
   price: number;
   paymentStatus: 'paid' | 'refunded' | 'pending';
   paymentMethod: string;
   bookingDate: Date;
+  cancellationRequested?: boolean;
+}
+
+interface BookingReportData {
+  totalBookings: number;
+  confirmedBookings: number;
+  pendingBookings: number;
+  cancelledBookings: number;
+  completedBookings: number;
+  totalRevenue: number;
+  sportDistribution: { name: string; value: number }[];
+  paymentMethodDistribution: { name: string; value: number }[];
 }
 
 const Bookings = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [paymentFilter, setPaymentFilter] = useState<string>('all');
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
+  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   
   // Mock bookings data
   const bookings: Booking[] = [
@@ -69,6 +103,8 @@ const Bookings = () => {
       time: '6:00 PM - 7:00 PM',
       userName: 'Rahul Sharma',
       userEmail: 'rahul.sharma@example.com',
+      userPhone: '+91 9876543210',
+      userAddress: '123 Main St, Jayanagar, Bangalore - 560011',
       userImage: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
       status: 'confirmed',
       price: 1080,
@@ -85,6 +121,8 @@ const Bookings = () => {
       time: '10:00 AM - 12:00 PM',
       userName: 'Priya Patel',
       userEmail: 'priya.patel@example.com',
+      userPhone: '+91 9876543211',
+      userAddress: '456 Park Avenue, Whitefield, Bangalore - 560066',
       userImage: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
       status: 'pending',
       price: 2500,
@@ -101,6 +139,8 @@ const Bookings = () => {
       time: '7:30 PM - 9:30 PM',
       userName: 'Vikram Singh',
       userEmail: 'vikram.singh@example.com',
+      userPhone: '+91 9876543212',
+      userAddress: '789 Brigade Road, Indiranagar, Bangalore - 560038',
       userImage: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
       status: 'completed',
       price: 800,
@@ -117,6 +157,8 @@ const Bookings = () => {
       time: '5:00 PM - 6:00 PM',
       userName: 'Ananya Singh',
       userEmail: 'ananya.singh@example.com',
+      userPhone: '+91 9876543213',
+      userAddress: '101 HSR Layout, Sector 3, Bangalore - 560102',
       userImage: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
       status: 'completed',
       price: 700,
@@ -133,21 +175,25 @@ const Bookings = () => {
       time: '4:00 PM - 5:00 PM',
       userName: 'Ravi Verma',
       userEmail: 'ravi.verma@example.com',
+      userPhone: '+91 9876543214',
+      userAddress: '202 Electronic City, Phase 1, Bangalore - 560100',
       status: 'cancelled',
       price: 900,
       paymentStatus: 'refunded',
-      paymentMethod: 'Net Banking',
+      paymentMethod: 'Pay at Venue',
       bookingDate: new Date(2025, 2, 10), // March 10, 2025
     },
     {
       id: 'BK2275',
-      groundName: 'Grand Slam Tennis Courts',
+      groundName: 'Grand Slam Volleyball Courts',
       location: 'Koramangala, Bangalore',
-      sport: 'Tennis',
+      sport: 'Volleyball',
       date: new Date(2025, 3, 18), // April 18, 2025
       time: '7:00 AM - 8:00 AM',
       userName: 'Neha Gupta',
       userEmail: 'neha.gupta@example.com',
+      userPhone: '+91 9876543215',
+      userAddress: '303 Koramangala, 6th Block, Bangalore - 560095',
       userImage: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
       status: 'confirmed',
       price: 600,
@@ -155,7 +201,71 @@ const Bookings = () => {
       paymentMethod: 'UPI',
       bookingDate: new Date(2025, 3, 1), // April 1, 2025
     },
+    {
+      id: 'BK2245',
+      groundName: 'Green Valley Football Ground',
+      location: 'Jayanagar, Bangalore',
+      sport: 'Football',
+      date: new Date(2025, 3, 25), // April 25, 2025
+      time: '7:00 PM - 8:00 PM',
+      userName: 'Arjun Nair',
+      userEmail: 'arjun.nair@example.com',
+      userPhone: '+91 9876543216',
+      userAddress: '404 Residency Road, Richmond Town, Bangalore - 560025',
+      userImage: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
+      status: 'pending',
+      price: 1080,
+      paymentStatus: 'pending',
+      paymentMethod: 'Pay at Venue',
+      bookingDate: new Date(2025, 3, 18), // April 18, 2025
+      cancellationRequested: true,
+    },
   ];
+  
+  // Generate report data
+  const generateReport = (): BookingReportData => {
+    const confirmedBookings = bookings.filter(b => b.status === 'confirmed').length;
+    const pendingBookings = bookings.filter(b => b.status === 'pending').length;
+    const cancelledBookings = bookings.filter(b => b.status === 'cancelled').length;
+    const completedBookings = bookings.filter(b => b.status === 'completed').length;
+    
+    const totalRevenue = bookings
+      .filter(b => b.paymentStatus === 'paid')
+      .reduce((sum, booking) => sum + booking.price, 0);
+    
+    // Sport distribution
+    const sportCounts: Record<string, number> = {};
+    bookings.forEach(booking => {
+      sportCounts[booking.sport] = (sportCounts[booking.sport] || 0) + 1;
+    });
+    
+    const sportDistribution = Object.entries(sportCounts).map(([name, value]) => ({
+      name,
+      value,
+    }));
+    
+    // Payment method distribution
+    const paymentCounts: Record<string, number> = {};
+    bookings.forEach(booking => {
+      paymentCounts[booking.paymentMethod] = (paymentCounts[booking.paymentMethod] || 0) + 1;
+    });
+    
+    const paymentMethodDistribution = Object.entries(paymentCounts).map(([name, value]) => ({
+      name,
+      value,
+    }));
+    
+    return {
+      totalBookings: bookings.length,
+      confirmedBookings,
+      pendingBookings,
+      cancelledBookings,
+      completedBookings,
+      totalRevenue,
+      sportDistribution,
+      paymentMethodDistribution,
+    };
+  };
   
   // Apply filters
   const filteredBookings = bookings.filter(booking => {
@@ -182,6 +292,7 @@ const Bookings = () => {
   };
   
   const cancelBooking = (bookingId: string) => {
+    setIsCancelDialogOpen(false);
     toast.success(`Booking ${bookingId} has been cancelled. Refund initiated.`);
     // In a real app, this would update the booking status in the database
   };
@@ -191,13 +302,26 @@ const Bookings = () => {
     // In a real app, this would send an email to the user
   };
   
-  const exportBookings = () => {
-    toast.success('Bookings exported successfully. Downloading CSV file...');
-    // In a real app, this would generate and download a CSV file
+  const handleViewUserDetails = (booking: Booking) => {
+    setSelectedBooking(booking);
+    setIsUserDialogOpen(true);
+  };
+  
+  const handleCancellationRequest = (booking: Booking) => {
+    setSelectedBooking(booking);
+    setIsCancelDialogOpen(true);
+  };
+  
+  const generatePdfReport = () => {
+    toast.success('Generating PDF report. It will be downloaded shortly...');
+    // In a real app, this would generate a PDF and download it
+    setTimeout(() => {
+      setIsReportDialogOpen(false);
+    }, 1500);
   };
   
   // Status badge helper
-  const renderStatusBadge = (status: Booking['status']) => {
+  const renderStatusBadge = (status: Booking['status'], cancellationRequested?: boolean) => {
     switch (status) {
       case 'confirmed':
         return (
@@ -208,10 +332,18 @@ const Bookings = () => {
         );
       case 'pending':
         return (
-          <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
-            <Clock className="h-3 w-3 mr-1" />
-            Pending
-          </Badge>
+          <div className="space-y-1">
+            <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
+              <Clock className="h-3 w-3 mr-1" />
+              Pending
+            </Badge>
+            {cancellationRequested && (
+              <Badge className="bg-red-50 text-red-600 hover:bg-red-50 block mt-1">
+                <AlertCircle className="h-3 w-3 mr-1" />
+                Cancellation Requested
+              </Badge>
+            )}
+          </div>
         );
       case 'cancelled':
         return (
@@ -266,10 +398,21 @@ const Bookings = () => {
             variant="outline" 
             size="sm"
             className="flex items-center"
-            onClick={exportBookings}
+            onClick={() => setIsReportDialogOpen(true)}
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            Generate Report
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="flex items-center"
+            onClick={() => {
+              toast.success('Bookings exported successfully. Downloading CSV file...');
+            }}
           >
             <Download className="h-4 w-4 mr-2" />
-            Export
+            Export CSV
           </Button>
         </div>
       </div>
@@ -395,7 +538,7 @@ const Bookings = () => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center">
+                      <div className="flex items-center cursor-pointer" onClick={() => handleViewUserDetails(booking)}>
                         <Avatar className="h-8 w-8 mr-2">
                           <AvatarImage src={booking.userImage} />
                           <AvatarFallback className="bg-gray-200">
@@ -409,7 +552,7 @@ const Bookings = () => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      {renderStatusBadge(booking.status)}
+                      {renderStatusBadge(booking.status, booking.cancellationRequested)}
                     </TableCell>
                     <TableCell>
                       <div>
@@ -428,9 +571,16 @@ const Bookings = () => {
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
                           <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            className="flex items-center"
+                            onClick={() => handleViewUserDetails(booking)}
+                          >
+                            <User className="h-4 w-4 mr-2" />
+                            View User Details
+                          </DropdownMenuItem>
                           <DropdownMenuItem className="flex items-center">
                             <Calendar className="h-4 w-4 mr-2" />
-                            View Details
+                            View Booking Details
                           </DropdownMenuItem>
                           {booking.status === 'pending' && (
                             <DropdownMenuItem 
@@ -444,10 +594,16 @@ const Bookings = () => {
                           {(booking.status === 'confirmed' || booking.status === 'pending') && (
                             <DropdownMenuItem 
                               className="flex items-center text-red-600"
-                              onClick={() => cancelBooking(booking.id)}
+                              onClick={() => booking.cancellationRequested 
+                                ? handleCancellationRequest(booking)
+                                : cancelBooking(booking.id)
+                              }
                             >
                               <X className="h-4 w-4 mr-2" />
-                              Cancel Booking
+                              {booking.cancellationRequested 
+                                ? 'Approve Cancellation' 
+                                : 'Cancel Booking'
+                              }
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuItem 
@@ -482,6 +638,251 @@ const Bookings = () => {
           </div>
         </div>
       </div>
+      
+      {/* User Details Dialog */}
+      <Dialog open={isUserDialogOpen} onOpenChange={setIsUserDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>User Details</DialogTitle>
+            <DialogDescription>
+              Complete profile information for this user
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedBooking && (
+            <div className="space-y-4">
+              <div className="flex items-center space-x-4">
+                <Avatar className="h-16 w-16">
+                  <AvatarImage src={selectedBooking.userImage} />
+                  <AvatarFallback className="bg-gray-200 text-lg">
+                    {selectedBooking.userName.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h3 className="font-bold text-lg">{selectedBooking.userName}</h3>
+                  <p className="text-gray-500">Customer ID: {selectedBooking.id.replace('BK', 'U')}</p>
+                </div>
+              </div>
+              
+              <Separator />
+              
+              <div className="space-y-3">
+                <div className="flex items-start">
+                  <Mail className="h-5 w-5 mr-3 text-gray-500 mt-0.5" />
+                  <div>
+                    <p className="text-sm text-gray-500">Email Address</p>
+                    <p>{selectedBooking.userEmail}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start">
+                  <Phone className="h-5 w-5 mr-3 text-gray-500 mt-0.5" />
+                  <div>
+                    <p className="text-sm text-gray-500">Phone Number</p>
+                    <p>{selectedBooking.userPhone || 'Not provided'}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start">
+                  <MapPin className="h-5 w-5 mr-3 text-gray-500 mt-0.5" />
+                  <div>
+                    <p className="text-sm text-gray-500">Address</p>
+                    <p>{selectedBooking.userAddress || 'Not provided'}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <Separator />
+              
+              <div className="bg-gray-50 p-3 rounded-md">
+                <h4 className="font-medium mb-2">Booking History</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Total Bookings:</span>
+                    <span className="font-medium">3</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Completed:</span>
+                    <span className="font-medium">1</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Cancellations:</span>
+                    <span className="font-medium">0</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsUserDialogOpen(false)}>
+              Close
+            </Button>
+            <Link to="/admin/users" className="w-full sm:w-auto">
+              <Button>View Full Profile</Button>
+            </Link>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Cancellation Request Dialog */}
+      <Dialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center text-red-600">
+              <AlertCircle className="h-5 w-5 mr-2" />
+              Confirm Cancellation Request
+            </DialogTitle>
+            <DialogDescription>
+              {selectedBooking?.cancellationRequested 
+                ? 'A user has requested cancellation for this booking. Please review the details before approving.' 
+                : 'Are you sure you want to cancel this booking?'
+              }
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedBooking && (
+            <div className="space-y-3">
+              <div className="bg-gray-50 p-3 rounded-md">
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <p className="text-gray-500">Booking ID:</p>
+                    <p className="font-medium">{selectedBooking.id}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">User:</p>
+                    <p className="font-medium">{selectedBooking.userName}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Ground:</p>
+                    <p className="font-medium">{selectedBooking.groundName}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Date & Time:</p>
+                    <p className="font-medium">{format(selectedBooking.date, 'dd MMM yyyy')} • {selectedBooking.time}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Payment Method:</p>
+                    <p className="font-medium">{selectedBooking.paymentMethod}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Amount:</p>
+                    <p className="font-medium">₹{selectedBooking.price}</p>
+                  </div>
+                </div>
+              </div>
+              
+              {selectedBooking.paymentStatus === 'paid' && (
+                <div className="bg-yellow-50 p-3 rounded-md">
+                  <p className="text-yellow-800 text-sm">
+                    <AlertCircle className="h-4 w-4 inline mr-2" />
+                    This booking has been paid. Cancellation will initiate a refund.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsCancelDialogOpen(false)}
+            >
+              Go Back
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={() => cancelBooking(selectedBooking?.id || '')}
+            >
+              {selectedBooking?.cancellationRequested ? 'Approve Cancellation' : 'Cancel Booking'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Generate Report Dialog */}
+      <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Generate Booking Report</DialogTitle>
+            <DialogDescription>
+              Create and download a PDF report of your bookings data
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Date Range Picker */}
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Select Date Range</h3>
+              <DateRangePicker />
+            </div>
+            
+            {/* Report Options */}
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Include in Report</h3>
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <input type="checkbox" id="includeFinancials" className="rounded" defaultChecked />
+                  <label htmlFor="includeFinancials">Financial Summary</label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input type="checkbox" id="includeCharts" className="rounded" defaultChecked />
+                  <label htmlFor="includeCharts">Charts and Graphs</label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input type="checkbox" id="includeBookingList" className="rounded" defaultChecked />
+                  <label htmlFor="includeBookingList">Detailed Booking List</label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input type="checkbox" id="includeUserDetails" className="rounded" defaultChecked />
+                  <label htmlFor="includeUserDetails">User Details</label>
+                </div>
+              </div>
+            </div>
+            
+            {/* Report Preview */}
+            <div className="border rounded-md p-4 space-y-3">
+              <h3 className="font-medium">Report Preview</h3>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="bg-blue-50 p-3 rounded-md">
+                  <p className="text-sm text-gray-500">Total Bookings</p>
+                  <p className="text-lg font-bold">{bookings.length}</p>
+                </div>
+                <div className="bg-green-50 p-3 rounded-md">
+                  <p className="text-sm text-gray-500">Revenue</p>
+                  <p className="text-lg font-bold">₹{bookings.reduce((sum, b) => sum + (b.paymentStatus === 'paid' ? b.price : 0), 0)}</p>
+                </div>
+                <div className="bg-purple-50 p-3 rounded-md">
+                  <p className="text-sm text-gray-500">Completed</p>
+                  <p className="text-lg font-bold">{bookings.filter(b => b.status === 'completed').length}</p>
+                </div>
+                <div className="bg-yellow-50 p-3 rounded-md">
+                  <p className="text-sm text-gray-500">Pending</p>
+                  <p className="text-lg font-bold">{bookings.filter(b => b.status === 'pending').length}</p>
+                </div>
+              </div>
+              
+              <div className="text-sm text-gray-500 p-2 border border-dashed rounded text-center">
+                <p>Charts and detailed booking information will be included in the PDF report</p>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsReportDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={generatePdfReport}
+              className="bg-pitch-blue hover:bg-opacity-90"
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Generate PDF Report
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

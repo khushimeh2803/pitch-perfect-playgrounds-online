@@ -6,8 +6,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { Calendar, CalendarCheck, CalendarX, ChevronRight, Clock, MapPin, Users } from 'lucide-react';
+import { Calendar, CalendarCheck, CalendarX, ChevronRight, Clock, MapPin, Users, Star, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface Booking {
   id: string;
@@ -21,13 +30,12 @@ interface Booking {
   status: 'upcoming' | 'completed' | 'cancelled';
   paymentMethod: string;
   bookingDate: string;
+  rating?: number;
 }
 
 const MyBookings = () => {
   const [activeTab, setActiveTab] = useState<string>('upcoming');
-  
-  // Mock bookings data
-  const bookings: Booking[] = [
+  const [bookings, setBookings] = useState<Booking[]>([
     {
       id: 'BK2503',
       groundName: 'Green Valley Football Ground',
@@ -79,6 +87,7 @@ const MyBookings = () => {
       status: 'completed',
       paymentMethod: 'Credit Card',
       bookingDate: '20 March, 2025',
+      rating: 4,
     },
     {
       id: 'BK2289',
@@ -93,23 +102,49 @@ const MyBookings = () => {
       paymentMethod: 'Net Banking',
       bookingDate: '10 March, 2025',
     },
-  ];
+  ]);
+  
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [cancelBookingId, setCancelBookingId] = useState('');
   
   const filteredBookings = bookings.filter(booking => booking.status === activeTab);
   
   const cancelBooking = (bookingId: string) => {
-    toast.success(`Booking ${bookingId} has been cancelled. Refund will be processed within 3-5 business days.`);
-    // In a real app, this would call an API to cancel the booking
+    setIsDialogOpen(false);
+    toast.success(`Cancellation request for booking ${bookingId} has been sent to admin for confirmation.`);
+    // In a real app, this would call an API to request cancellation
   };
   
-  const rateBooking = (bookingId: string) => {
+  const requestCancellation = (bookingId: string) => {
+    setCancelBookingId(bookingId);
+    setIsDialogOpen(true);
+  };
+  
+  const rateBooking = (bookingId: string, rating: number) => {
+    const updatedBookings = bookings.map(booking => 
+      booking.id === bookingId ? {...booking, rating} : booking
+    );
+    setBookings(updatedBookings);
     toast.success(`Thanks for rating your experience for booking ${bookingId}!`);
-    // In a real app, this would open a rating modal
   };
   
   const rebookSlot = (bookingId: string) => {
     toast.success(`Booking details for ${bookingId} have been copied to a new booking. Redirecting...`);
     // In a real app, this would redirect to the booking page with prefilled details
+  };
+  
+  const renderStarRating = (bookingId: string, currentRating: number | undefined) => {
+    return (
+      <div className="flex items-center space-x-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <Star 
+            key={star}
+            className={`h-5 w-5 cursor-pointer ${star <= (currentRating || 0) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`}
+            onClick={() => rateBooking(bookingId, star)}
+          />
+        ))}
+      </div>
+    );
   };
   
   const renderStatusBadge = (status: Booking['status']) => {
@@ -264,17 +299,19 @@ const MyBookings = () => {
                     <Button 
                       variant="outline" 
                       size="sm" 
-                      onClick={() => cancelBooking(booking.id)}
+                      onClick={() => requestCancellation(booking.id)}
                       className="text-red-600 border-red-200 hover:bg-red-50"
                     >
-                      Cancel Booking
+                      Request Cancellation
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                    >
-                      View Details
-                    </Button>
+                    <Link to={`/grounds/${booking.id}`}>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                      >
+                        View Details
+                      </Button>
+                    </Link>
                   </CardFooter>
                 </Card>
               ))
@@ -345,16 +382,25 @@ const MyBookings = () => {
                         Paid with {booking.paymentMethod}
                       </div>
                     </div>
+                    
+                    {/* Rating Section */}
+                    <div className="mt-4 bg-gray-50 p-3 rounded-md">
+                      <h4 className="text-sm font-medium mb-2">Rate your experience:</h4>
+                      {renderStarRating(booking.id, booking.rating)}
+                      {booking.rating && (
+                        <p className="text-xs text-gray-500 mt-1">Thank you for your rating!</p>
+                      )}
+                    </div>
                   </CardContent>
                   <CardFooter className="bg-gray-50 flex flex-wrap gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => rateBooking(booking.id)}
-                      className="border-yellow-200 text-yellow-600 hover:bg-yellow-50"
-                    >
-                      Rate Experience
-                    </Button>
+                    <Link to={`/grounds/${booking.id}`}>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                      >
+                        View Details
+                      </Button>
+                    </Link>
                     <Button 
                       variant="outline" 
                       size="sm"
@@ -435,14 +481,15 @@ const MyBookings = () => {
                     </div>
                   </CardContent>
                   <CardFooter className="bg-gray-50 flex flex-wrap gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => rebookSlot(booking.id)}
-                      className="border-green-200 text-green-600 hover:bg-green-50"
-                    >
-                      Book Again
-                    </Button>
+                    <Link to="/grounds">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="border-green-200 text-green-600 hover:bg-green-50"
+                      >
+                        Book Again
+                      </Button>
+                    </Link>
                   </CardFooter>
                 </Card>
               ))
@@ -450,6 +497,43 @@ const MyBookings = () => {
           </TabsContent>
         </Tabs>
       </div>
+      
+      {/* Cancellation Confirmation Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+              Confirm Cancellation Request
+            </DialogTitle>
+            <DialogDescription className="pt-2">
+              Are you sure you want to request cancellation of this booking? The admin will need to confirm your cancellation request.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="bg-gray-50 p-3 rounded-md text-sm">
+            <p className="text-gray-600">Cancellation Policy:</p>
+            <ul className="list-disc list-inside mt-1 text-gray-600 space-y-1">
+              <li>Cancellations need admin approval</li>
+              <li>Refunds may take 3-5 business days to process</li>
+              <li>Cancellations within 24 hours of the slot may incur charges</li>
+            </ul>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline"
+              onClick={() => setIsDialogOpen(false)}
+            >
+              Go Back
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={() => cancelBooking(cancelBookingId)}
+            >
+              Confirm Request
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

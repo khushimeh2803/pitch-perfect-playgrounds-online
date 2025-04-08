@@ -8,12 +8,17 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { CreditCard, Shield, Landmark, Wallet } from 'lucide-react';
+import { CreditCard, Shield, Landmark, Wallet, Tag, Info } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Link } from 'react-router-dom';
 
 const Payment = () => {
   const navigate = useNavigate();
   const [paymentMethod, setPaymentMethod] = useState('card');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [promoCode, setPromoCode] = useState('');
+  const [promoApplied, setPromoApplied] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   
   // Mock booking details (in a real app, this would come from state or context)
   const bookingDetails = {
@@ -23,12 +28,18 @@ const Payment = () => {
     time: '6:00 PM - 7:00 PM',
     players: 10,
     price: 1200,
-    discount: 120,
-    total: 1080,
+    discount: promoApplied ? 240 : 120, // 20% if promo applied, 10% otherwise
+    total: promoApplied ? 960 : 1080,
   };
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!agreedToTerms) {
+      toast.error('Please agree to the terms and conditions to proceed');
+      return;
+    }
+    
     setIsProcessing(true);
     
     // Simulate payment processing
@@ -37,6 +48,15 @@ const Payment = () => {
       toast.success('Payment successful! Your booking is confirmed.');
       navigate('/bookings');
     }, 2000);
+  };
+  
+  const applyPromoCode = () => {
+    if (promoCode.toLowerCase() === 'sports20') {
+      setPromoApplied(true);
+      toast.success('Promo code SPORTS20 applied! 20% discount added.');
+    } else {
+      toast.error('Invalid promo code. Please try again.');
+    }
   };
   
   return (
@@ -70,24 +90,10 @@ const Payment = () => {
                     </div>
                     
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="upi" id="upi" />
-                      <Label htmlFor="upi" className="flex items-center cursor-pointer">
-                        <svg 
-                          className="h-5 w-5 mr-2 text-pitch-green" 
-                          viewBox="0 0 24 24" 
-                          fill="currentColor"
-                        >
-                          <path d="M14.23 2.854L12.23 7.995H16.813L9.771 21.147L11.771 16.005H7.188L14.23 2.854Z" />
-                        </svg>
-                        UPI Payment
-                      </Label>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="netbanking" id="netbanking" />
-                      <Label htmlFor="netbanking" className="flex items-center cursor-pointer">
+                      <RadioGroupItem value="venue" id="venue" />
+                      <Label htmlFor="venue" className="flex items-center cursor-pointer">
                         <Landmark className="h-5 w-5 mr-2 text-pitch-blue" />
-                        Net Banking
+                        Pay at Venue
                       </Label>
                     </div>
                   </RadioGroup>
@@ -132,65 +138,67 @@ const Payment = () => {
                 </Card>
               )}
               
-              {paymentMethod === 'upi' && (
+              {/* Promo Code Section */}
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Tag className="h-5 w-5 mr-2" />
+                    Promo Code
+                  </CardTitle>
+                  <CardDescription>
+                    Enter a valid promo code to get a discount
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex items-end gap-2">
+                  <div className="flex-1">
+                    <Input 
+                      placeholder="Enter promo code" 
+                      value={promoCode}
+                      onChange={(e) => setPromoCode(e.target.value)}
+                      disabled={promoApplied}
+                    />
+                  </div>
+                  <Button 
+                    type="button" 
+                    onClick={applyPromoCode}
+                    disabled={!promoCode || promoApplied}
+                  >
+                    {promoApplied ? 'Applied' : 'Apply'}
+                  </Button>
+                </CardContent>
+                {promoApplied && (
+                  <CardFooter className="pt-0 text-green-600">
+                    Promo code applied! You're saving ₹120 (20% off)
+                  </CardFooter>
+                )}
+              </Card>
+              
+              {paymentMethod === 'venue' && (
                 <Card className="mb-6">
                   <CardHeader>
-                    <CardTitle>UPI Payment</CardTitle>
+                    <CardTitle>Pay at Venue</CardTitle>
                     <CardDescription>
-                      Pay using any UPI app (Google Pay, PhonePe, Paytm, etc.)
+                      Payment will be collected at the venue before your slot begins
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <Label htmlFor="upiId">UPI ID</Label>
-                      <Input id="upiId" placeholder="yourname@upi" required />
-                    </div>
-                    
-                    <div className="mt-4">
-                      <p className="text-sm text-gray-500 mb-2">Alternatively, scan the QR code:</p>
-                      <div className="bg-gray-100 p-4 rounded-md flex items-center justify-center">
-                        <div className="h-48 w-48 bg-white border border-gray-200 rounded flex items-center justify-center">
-                          <p className="text-gray-400 text-sm text-center">
-                            QR Code would<br />be displayed here
-                          </p>
-                        </div>
-                      </div>
+                  <CardContent>
+                    <div className="bg-yellow-50 p-4 rounded-md text-sm text-yellow-800 space-y-2">
+                      <p className="flex items-center font-medium">
+                        <Info className="h-4 w-4 mr-2" />
+                        Important Information
+                      </p>
+                      <p>
+                        Please arrive at least 15 minutes before your slot time for payment processing.
+                      </p>
+                      <p>
+                        We accept cash, card, and UPI payments at the venue.
+                      </p>
                     </div>
                   </CardContent>
                 </Card>
               )}
               
-              {paymentMethod === 'netbanking' && (
-                <Card className="mb-6">
-                  <CardHeader>
-                    <CardTitle>Net Banking</CardTitle>
-                    <CardDescription>
-                      Select your bank to proceed with Net Banking
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <RadioGroup defaultValue="hdfc" className="grid grid-cols-2 gap-4">
-                      {[
-                        { id: 'hdfc', name: 'HDFC Bank' },
-                        { id: 'sbi', name: 'State Bank of India' },
-                        { id: 'icici', name: 'ICICI Bank' },
-                        { id: 'axis', name: 'Axis Bank' },
-                        { id: 'kotak', name: 'Kotak Mahindra Bank' },
-                        { id: 'other', name: 'Other Banks' },
-                      ].map((bank) => (
-                        <div key={bank.id} className="flex items-center space-x-2 border border-gray-200 rounded-md p-3">
-                          <RadioGroupItem value={bank.id} id={bank.id} />
-                          <Label htmlFor={bank.id} className="cursor-pointer">
-                            {bank.name}
-                          </Label>
-                        </div>
-                      ))}
-                    </RadioGroup>
-                  </CardContent>
-                </Card>
-              )}
-              
-              <Card>
+              <Card className="mb-6">
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     <Shield className="h-5 w-5 mr-2" />
@@ -229,14 +237,51 @@ const Payment = () => {
                     </div>
                   </div>
                 </CardContent>
-                <CardFooter>
-                  <Button
-                    type="submit"
-                    className="w-full bg-pitch-green hover:bg-opacity-90"
-                    disabled={isProcessing}
-                  >
-                    {isProcessing ? 'Processing...' : `Pay ₹${bookingDetails.total}`}
-                  </Button>
+              </Card>
+              
+              {/* Terms and Conditions */}
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="mb-4">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="terms" 
+                        checked={agreedToTerms} 
+                        onCheckedChange={(checked) => {
+                          if (typeof checked === 'boolean') {
+                            setAgreedToTerms(checked);
+                          }
+                        }}
+                      />
+                      <Label htmlFor="terms" className="text-sm text-gray-700">
+                        I agree to the <Link to="/terms" className="text-pitch-blue underline">Terms and Conditions</Link>
+                      </Label>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2 ml-6">
+                      By checking this box, you agree to our cancellation policy, venue rules, and payment terms.
+                      Cancellations are only allowed with admin confirmation.
+                    </p>
+                  </div>
+                </CardContent>
+                <CardFooter className="border-t pt-4">
+                  <div className="flex flex-col space-y-3 w-full">
+                    <Button
+                      type="submit"
+                      className="w-full bg-pitch-green hover:bg-opacity-90"
+                      disabled={isProcessing || !agreedToTerms}
+                    >
+                      {isProcessing ? 'Processing...' : `Pay ₹${bookingDetails.total}`}
+                    </Button>
+                    <Link to="/membership" className="w-full">
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        className="w-full border-pitch-blue text-pitch-blue hover:bg-pitch-blue hover:text-white"
+                      >
+                        View Membership Plans & Save More
+                      </Button>
+                    </Link>
+                  </div>
                 </CardFooter>
               </Card>
             </form>
@@ -277,7 +322,7 @@ const Payment = () => {
                     <span>₹{bookingDetails.price}</span>
                   </div>
                   <div className="flex justify-between text-pitch-green">
-                    <span>Discount (10%):</span>
+                    <span>Discount {promoApplied ? '(20%)' : '(10%)'}:</span>
                     <span>-₹{bookingDetails.discount}</span>
                   </div>
                   <Separator />
