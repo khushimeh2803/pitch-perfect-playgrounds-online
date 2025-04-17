@@ -1,19 +1,27 @@
-
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Menu, X, User, LogOut } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const Navbar = () => {
   const { isAuthenticated, user, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   
-  const handleLogout = () => {
-    logout();
-    navigate('/');
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      logout();
+      navigate('/');
+      toast.success('Logged out successfully');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to log out');
+    }
   };
   
   const navLinks = [

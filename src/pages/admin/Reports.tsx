@@ -100,6 +100,13 @@ const Reports = () => {
     }
   };
   
+  const formatValue = (value: ValueType): string => {
+    if (typeof value === 'number') {
+      return value.toFixed(2);
+    }
+    return String(value);
+  };
+  
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">

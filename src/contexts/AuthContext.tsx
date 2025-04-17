@@ -1,20 +1,20 @@
 
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from "sonner";
+import type { User, Session } from '@supabase/supabase-js';
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
+interface AuthUser extends User {
   isAdmin?: boolean;
 }
 
 interface AuthContextType {
-  user: User | null;
+  user: AuthUser | null;
+  session: Session | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (name: string, email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   isAuthenticated: boolean;
   isAdmin: boolean;
 }
@@ -30,96 +30,109 @@ export const useAuth = () => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check for saved user on initial load
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    setIsLoading(false);
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setSession(session);
+        if (session?.user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('is_admin')
+            .eq('id', session.user.id)
+            .single();
+          
+          setUser({
+            ...session.user,
+            isAdmin: profile?.is_admin || false
+          });
+        } else {
+          setUser(null);
+        }
+        setIsLoading(false);
+      }
+    );
+
+    // Check current session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session?.user) {
+        supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', session.user.id)
+          .single()
+          .then(({ data: profile }) => {
+            setUser({
+              ...session.user,
+              isAdmin: profile?.is_admin || false
+            });
+          });
+      }
+      setIsLoading(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
-  // Mock login function (would connect to backend in real implementation)
   const login = async (email: string, password: string) => {
-    setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock validation
-      if (email === 'admin@pitchperfect.com' && password === 'admin123') {
-        const adminUser = {
-          id: 'admin1',
-          name: 'Admin User',
-          email: 'admin@pitchperfect.com',
-          isAdmin: true
-        };
-        setUser(adminUser);
-        localStorage.setItem('user', JSON.stringify(adminUser));
-        toast.success('Admin login successful');
-        return;
-      } 
-      
-      if (email === 'user@example.com' && password === 'password123') {
-        const regularUser = {
-          id: 'user1',
-          name: 'John Doe',
-          email: 'user@example.com',
-          isAdmin: false
-        };
-        setUser(regularUser);
-        localStorage.setItem('user', JSON.stringify(regularUser));
-        toast.success('Login successful');
-        return;
-      }
-      
-      throw new Error('Invalid email or password');
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Login failed');
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Mock signup function
-  const signup = async (name: string, email: string, password: string) => {
-    setIsLoading(true);
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock user creation
-      const newUser = {
-        id: `user${Math.floor(Math.random() * 1000)}`,
-        name,
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
-        isAdmin: false
-      };
-      
-      setUser(newUser);
-      localStorage.setItem('user', JSON.stringify(newUser));
-      toast.success('Account created successfully');
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Signup failed');
+        password,
+      });
+
+      if (error) throw error;
+
+      toast.success('Login successful!');
+    } catch (error: any) {
+      toast.error(error.message);
       throw error;
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  // Logout function
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('user');
-    toast.success('Logged out successfully');
+  const signup = async (name: string, email: string, password: string) => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name,
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      toast.success('Account created successfully! Please check your email to verify your account.');
+    } catch (error: any) {
+      toast.error(error.message);
+      throw error;
+    }
+  };
+
+  const logout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      setUser(null);
+      setSession(null);
+    } catch (error: any) {
+      toast.error(error.message);
+      throw error;
+    }
   };
 
   const value = {
     user,
+    session,
     isLoading,
     login,
     signup,

@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -7,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const SignIn = () => {
   const navigate = useNavigate();
@@ -18,6 +18,17 @@ const SignIn = () => {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   
+  useEffect(() => {
+    // Check if user is already logged in
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigate('/');
+      }
+    };
+    checkSession();
+  }, [navigate]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
@@ -25,7 +36,6 @@ const SignIn = () => {
       [name]: type === 'checkbox' ? checked : value
     }));
     
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => {
         const newErrors = { ...prev };
@@ -38,12 +48,10 @@ const SignIn = () => {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     
-    // Email validation
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
     }
     
-    // Password validation
     if (!formData.password) {
       newErrors.password = 'Password is required';
     }
@@ -58,31 +66,51 @@ const SignIn = () => {
     if (!validateForm()) return;
     
     try {
-      await login(formData.email, formData.password);
-      toast.success('Login successful! Redirecting...');
-      navigate('/');
-    } catch (error) {
-      console.error('Login error:', error);
+      const { data: { session }, error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (error) throw error;
+
+      if (session) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', session.user.id)
+          .single();
+
+        toast.success('Login successful!');
+        if (profile?.is_admin) {
+          navigate('/admin');
+        } else {
+          navigate('/');
+        }
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to sign in');
     }
   };
-  
-  // Demo credentials helper
-  const fillDemoCredentials = (type: 'user' | 'admin') => {
-    if (type === 'user') {
-      setFormData({
-        email: 'user@example.com',
-        password: 'password123',
-        rememberMe: false,
+
+  const handleForgotPassword = async () => {
+    if (!formData.email) {
+      setErrors({ email: 'Please enter your email address' });
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
+        redirectTo: `${window.location.origin}/reset-password`,
       });
-    } else {
-      setFormData({
-        email: 'admin@pitchperfect.com',
-        password: 'admin123',
-        rememberMe: false,
-      });
+      
+      if (error) throw error;
+      
+      toast.success('Password reset email sent! Please check your inbox.');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to send reset email');
     }
   };
-  
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -103,7 +131,6 @@ const SignIn = () => {
       
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          {/* Demo account notice */}
           <div className="bg-blue-50 p-4 rounded-md mb-6">
             <div className="flex">
               <div className="flex-shrink-0">
@@ -179,7 +206,7 @@ const SignIn = () => {
               </div>
               
               <div className="text-sm">
-                <Link to="#" className="font-medium text-pitch-green hover:text-pitch-blue">
+                <Link to="#" className="font-medium text-pitch-green hover:text-pitch-blue" onClick={handleForgotPassword}>
                   Forgot your password?
                 </Link>
               </div>
