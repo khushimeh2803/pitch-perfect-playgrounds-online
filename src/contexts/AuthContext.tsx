@@ -17,7 +17,7 @@ interface AuthContextType {
   isAdmin: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (name: string, email: string, password: string) => Promise<void>;
+  signup: (name: string, email: string, password: string, isAdmin?: boolean) => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
 }
@@ -117,25 +117,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) throw error;
     } catch (error: any) {
       console.error('Error logging in:', error.message);
+      toast.error(error.message || 'Failed to log in');
       throw error;
     }
   };
   
-  const signup = async (name: string, email: string, password: string) => {
+  const signup = async (name: string, email: string, password: string, isAdmin = false) => {
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             name,
+            isAdmin, // Pass admin flag to metadata
           },
         },
       });
-      
+
       if (error) throw error;
+
+      // If the signup was successful and data.user exists, we want to update their profile
+      if (data.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({ 
+            is_admin: isAdmin, 
+            name 
+          })
+          .eq('id', data.user.id);
+
+        if (profileError) {
+          console.error('Error updating profile:', profileError);
+          toast.error('Could not complete profile setup');
+        }
+      }
     } catch (error: any) {
       console.error('Error signing up:', error.message);
+      toast.error(error.message || 'Failed to sign up');
       throw error;
     }
   };
@@ -150,6 +169,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(null);
     } catch (error: any) {
       console.error('Error logging out:', error.message);
+      toast.error(error.message || 'Failed to log out');
       throw error;
     }
   };
@@ -165,6 +185,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       toast.success('Password reset email sent! Please check your inbox.');
     } catch (error: any) {
       console.error('Error resetting password:', error.message);
+      toast.error(error.message || 'Failed to send reset email');
       throw error;
     }
   };
@@ -192,3 +213,5 @@ export const useAuth = () => {
   }
   return context;
 };
+
+export default AuthContext;

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -15,14 +14,17 @@ const SignUp = () => {
     email: '',
     password: '',
     confirmPassword: '',
+    isAdmin: false
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({ 
+      ...prev, 
+      [name]: type === 'checkbox' ? checked : value 
+    }));
     
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => {
         const newErrors = { ...prev };
@@ -35,26 +37,22 @@ const SignUp = () => {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     
-    // Name validation
     if (!formData.name.trim()) {
       newErrors.name = 'Name is required';
     }
     
-    // Email validation
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Email is invalid';
     }
     
-    // Password validation
     if (!formData.password) {
       newErrors.password = 'Password is required';
     } else if (formData.password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters';
     }
     
-    // Confirm password validation
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
@@ -69,7 +67,12 @@ const SignUp = () => {
     if (!validateForm()) return;
     
     try {
-      await signup(formData.name, formData.email, formData.password);
+      await signup(
+        formData.name, 
+        formData.email, 
+        formData.password, 
+        formData.email === 'admin@pitchperfect.com'
+      );
       toast.success('Account created successfully! Redirecting...');
       navigate('/');
     } catch (error) {
