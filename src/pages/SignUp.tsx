@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -5,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { InfoIcon } from 'lucide-react';
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -20,10 +23,20 @@ const SignUp = () => {
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({ 
-      ...prev, 
-      [name]: type === 'checkbox' ? checked : value 
-    }));
+    
+    // Automatically set isAdmin to true if the email is admin@pitchperfect.com
+    if (name === 'email' && value === 'admin@pitchperfect.com') {
+      setFormData(prev => ({ 
+        ...prev, 
+        [name]: value,
+        isAdmin: true
+      }));
+    } else {
+      setFormData(prev => ({ 
+        ...prev, 
+        [name]: type === 'checkbox' ? checked : value 
+      }));
+    }
     
     if (errors[name]) {
       setErrors(prev => {
@@ -67,15 +80,19 @@ const SignUp = () => {
     if (!validateForm()) return;
     
     try {
+      // Set isAdmin to true if the email is admin@pitchperfect.com
+      const isAdmin = formData.email === 'admin@pitchperfect.com';
+      
       await signup(
         formData.name, 
         formData.email, 
         formData.password, 
-        formData.email === 'admin@pitchperfect.com'
+        isAdmin
       );
       toast.success('Account created successfully! Redirecting...');
       navigate('/');
-    } catch (error) {
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to create account');
       console.error('Signup error:', error);
     }
   };
@@ -100,6 +117,13 @@ const SignUp = () => {
       
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          <Alert className="mb-6 bg-blue-50 border-blue-200">
+            <InfoIcon className="h-4 w-4 text-blue-500" />
+            <AlertDescription className="text-blue-700">
+              <strong>Default Admin Account:</strong> Use email <span className="font-mono">admin@pitchperfect.com</span> with password <span className="font-mono">admin123</span> to create an admin account.
+            </AlertDescription>
+          </Alert>
+          
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
               <Label htmlFor="name">Full Name</Label>

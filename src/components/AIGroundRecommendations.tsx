@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,10 +9,10 @@ import { toast } from 'sonner';
 const AIGroundRecommendations: React.FC = () => {
   const [recommendations, setRecommendations] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
-  const { user } = useAuth();
+  const { user, session } = useAuth();
 
   const fetchRecommendations = async () => {
-    if (!user) {
+    if (!user || !session) {
       toast.error('Please log in to get recommendations');
       return;
     }
@@ -23,7 +23,7 @@ const AIGroundRecommendations: React.FC = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user.access_token}`
+          'Authorization': `Bearer ${session.access_token}`
         },
         body: JSON.stringify({ userId: user.id })
       });
