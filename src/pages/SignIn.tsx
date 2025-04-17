@@ -19,7 +19,6 @@ const SignIn = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   
   useEffect(() => {
-    // Check if user is already logged in
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
@@ -143,20 +142,7 @@ const SignIn = () => {
                 <div className="mt-2 text-sm text-blue-700">
                   <p>Use these demo accounts to test the application:</p>
                   <div className="mt-2 flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => fillDemoCredentials('user')}
-                      className="inline-flex items-center px-2.5 py-1.5 border border-blue-300 shadow-sm text-xs font-medium rounded text-blue-700 bg-white hover:bg-blue-50 focus:outline-none"
-                    >
-                      Regular User
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => fillDemoCredentials('admin')}
-                      className="inline-flex items-center px-2.5 py-1.5 border border-blue-300 shadow-sm text-xs font-medium rounded text-blue-700 bg-white hover:bg-blue-50 focus:outline-none"
-                    >
-                      Admin User
-                    </button>
+                    {/* Remove demo credential buttons */}
                   </div>
                 </div>
               </div>

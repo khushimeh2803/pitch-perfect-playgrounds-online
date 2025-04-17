@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Menu, X, User, LogOut } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from "sonner";
 
 const Navbar = () => {
   const { isAuthenticated, user, logout, isAdmin } = useAuth();
@@ -13,12 +14,9 @@ const Navbar = () => {
   
   const handleLogout = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      
-      logout();
-      navigate('/');
+      await logout();
       toast.success('Logged out successfully');
+      navigate('/');
     } catch (error: any) {
       toast.error(error.message || 'Failed to log out');
     }
